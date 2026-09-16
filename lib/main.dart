@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/providers.dart';
 import 'data/seeder/dev_card_seeder.dart';
-import 'features/scanner/screens/scan_benchmark_screen.dart';
+import 'features/home/screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +87,6 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       );
     }
 
-    return const ScanBenchmarkScreen();
+    return const HomeScreen();
   }
 }

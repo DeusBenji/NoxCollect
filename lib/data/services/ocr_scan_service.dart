@@ -129,8 +129,9 @@ class OcrScanService {
 
     // Write to temporary files to feed into ML Kit
     final tempDir = await getTemporaryDirectory();
-    final idFile = File('${tempDir.path}/identity_crop.jpg');
-    final hdFile = File('${tempDir.path}/header_crop.jpg');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final idFile = File('${tempDir.path}/identity_crop_$timestamp.jpg');
+    final hdFile = File('${tempDir.path}/header_crop_$timestamp.jpg');
 
     await idFile.writeAsBytes(img.encodeJpg(upscaledIdentity));
     await hdFile.writeAsBytes(img.encodeJpg(headerCrop));

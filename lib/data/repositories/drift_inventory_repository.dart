@@ -14,7 +14,30 @@ class DriftInventoryRepository implements InventoryRepository {
     final query = _db.select(_db.userCardsTable)
       ..where((tbl) => tbl.userId.equals(userId))
       ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
-    return query.watch().map((rows) => rows.map(_mapRowToModel).toList());
+      
+    return query.watch().map((rows) {
+      final models = rows.map(_mapRowToModel).toList();
+      // Group by cardId + condition
+      final grouped = <String, UserCardModel>{};
+      for (final card in models) {
+        final key = '${card.cardId}_${card.condition}';
+        if (grouped.containsKey(key)) {
+          final existing = grouped[key]!;
+          grouped[key] = UserCardModel(
+            id: existing.id,
+            userId: existing.userId,
+            cardId: existing.cardId,
+            quantity: existing.quantity + card.quantity,
+            condition: existing.condition,
+            createdAt: existing.createdAt,
+            updatedAt: existing.updatedAt,
+          );
+        } else {
+          grouped[key] = card;
+        }
+      }
+      return grouped.values.toList();
+    });
   }
 
   @override

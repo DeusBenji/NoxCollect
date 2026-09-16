@@ -36,6 +36,7 @@ abstract class ScanRepository {
     required double guideHeight,
     String? ocrName,
     String? ocrNumber,
+    String? ocrSetCode,
   });
 
   /// Fuse visual backend candidates with local OCR tokens to determine identity.

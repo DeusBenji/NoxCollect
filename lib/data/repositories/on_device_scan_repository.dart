@@ -226,6 +226,7 @@ class OnDeviceScanRepository implements ScanRepository {
     required double guideHeight,
     String? ocrName,
     String? ocrNumber,
+    String? ocrSetCode,
   }) async {
     return await _visualRepo.recognizeCard(
       imageFile: imageFile,
@@ -237,6 +238,7 @@ class OnDeviceScanRepository implements ScanRepository {
       guideHeight: guideHeight,
       ocrName: ocrName,
       ocrNumber: ocrNumber,
+      ocrSetCode: ocrSetCode,
     );
   }
 
@@ -279,6 +281,33 @@ class OnDeviceScanRepository implements ScanRepository {
             numberClean: (vc.cardNumber ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
             setId: vc.setCode ?? 'UNKNOWN',
             setCode: vc.setCode,
+            imageUrlLarge: vc.imageUrl,
+            imageUrlSmall: vc.imageUrl,
+          );
+      } else {
+          // Always merge the fresh backend images to overwrite any stale local Drift cache
+          card = CardModel(
+            id: card.id,
+            name: card.name,
+            localName: card.localName,
+            cleanName: card.cleanName,
+            language: card.language,
+            region: card.region,
+            cardNumber: card.cardNumber,
+            numberClean: card.numberClean,
+            numberDenominator: card.numberDenominator,
+            setId: card.setId,
+            setCode: card.setCode,
+            rarity: card.rarity,
+            supertype: card.supertype,
+            subtypes: card.subtypes,
+            types: card.types,
+            hp: card.hp,
+            artist: card.artist,
+            artistClean: card.artistClean,
+            imageUrlSmall: vc.imageUrl ?? card.imageUrlSmall,
+            imageUrlLarge: vc.imageUrl ?? card.imageUrlLarge,
+            externalIds: card.externalIds,
           );
       }
 

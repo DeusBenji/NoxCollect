@@ -49,3 +49,9 @@ final scanRepositoryProvider = Provider<ScanRepository>((ref) {
   ref.onDispose(() => scanRepo.dispose());
   return scanRepo;
 });
+
+/// Stream of all user cards in the inventory.
+final userCardsStreamProvider = StreamProvider((ref) {
+  final inventoryRepo = ref.watch(inventoryRepositoryProvider);
+  return inventoryRepo.watchUserCards();
+});

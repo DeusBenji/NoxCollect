@@ -28,6 +28,7 @@ class VisualRecognitionRepository {
     required double guideHeight,
     String? ocrName,
     String? ocrNumber,
+    String? ocrSetCode,
   }) async {
     final requestId = _uuid.v4();
     final stopwatch = Stopwatch()..start();
@@ -77,6 +78,7 @@ class VisualRecognitionRepository {
       
       if (ocrName != null) request.fields['ocr_name'] = ocrName;
       if (ocrNumber != null) request.fields['ocr_number'] = ocrNumber;
+      if (ocrSetCode != null) request.fields['ocr_set_code'] = ocrSetCode;
 
       request.files.add(
         http.MultipartFile.fromBytes(
@@ -118,6 +120,7 @@ class VisualRecognitionRepository {
                 region: c['region'],
                 cardNumber: c['cardNumber'],
                 setCode: c['setCode'],
+                imageUrl: c['imageUrl'],
                 distance: (c['distance'] as num).toDouble(),
                 similarity: (c['similarity'] as num).toDouble(),
               ),

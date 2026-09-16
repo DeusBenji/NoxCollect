@@ -41,6 +41,7 @@ async def recognize_card(
     file: UploadFile = File(...),
     ocr_name: Optional[str] = Form(None),
     ocr_number: Optional[str] = Form(None),
+    ocr_set_code: Optional[str] = Form(None),
     x_request_id: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -49,7 +50,7 @@ async def recognize_card(
     
     image_bytes = await file.read()
     size_bytes = len(image_bytes)
-    logger.info(f"[{req_id}] Received POST /recognize: size={size_bytes} bytes | OCR: name={ocr_name}, number={ocr_number}")
+    logger.info(f"[{req_id}] Received POST /recognize: size={size_bytes} bytes | OCR: name={ocr_name}, number={ocr_number}, set={ocr_set_code}")
     
     # 1. Decode / Preprocess
     t_decode_start = time.time()
@@ -117,8 +118,14 @@ async def recognize_card(
     logger.info(f"[{req_id}] Returning Top-{len(results)} results:")
     for rank, (emb_record, print_record, distance) in enumerate(results, 1):
         card_set = db.query(models.CardSet).filter(models.CardSet.id == print_record.set_id).first()
+        ref_img = db.query(models.ReferenceImage).filter(models.ReferenceImage.id == emb_record.reference_image_id).first()
         
         sim_score = max(0.0, 1.0 - distance) # Cosine distance to similarity
+        
+        if ocr_set_code and ocr_set_code.strip() and card_set and card_set.set_code:
+            if ocr_set_code.strip().lower() == card_set.set_code.lower():
+                sim_score *= 1.15
+                logger.info(f"[{req_id}] Boosting {print_record.id} score by 1.15x for Set Code match ({card_set.set_code})")
         
         logger.info(f"[{req_id}] #{rank} ID: {print_record.id} | {print_record.name} | {print_record.card_number} | Cos: {distance:.4f} | Sim: {sim_score:.4f}")
         
@@ -130,10 +137,14 @@ async def recognize_card(
             "region": print_record.region,
             "cardNumber": print_record.card_number,
             "setCode": card_set.set_code if card_set else None,
+            "imageUrl": ref_img.image_url if ref_img else None,
             "distance": distance,
             "similarity": sim_score,
             "referenceImageId": emb_record.reference_image_id
         })
+        
+    # Sort descending by updated similarity
+    candidates.sort(key=lambda x: x["similarity"], reverse=True)
         
     t_serial = time.time() - t_serial_start
     t_total = time.time() - t_start
