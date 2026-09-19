@@ -53,3 +53,7 @@ venv/
 __pycache__/
 *.sqlite
 .env
+
+# Database Backups
+*.sql
+*.dump
