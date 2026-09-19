@@ -19,6 +19,7 @@ class CardSet(Base):
     region = Column(String, default='US')
     release_date = Column(String)
     total_printed = Column(Integer)
+    symbol_url = Column(String)
     printings = relationship("Printing", back_populates="card_set")
 
 class Printing(Base):

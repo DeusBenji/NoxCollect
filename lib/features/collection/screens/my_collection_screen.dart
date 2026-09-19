@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../search/widgets/advanced_add_sheet.dart';
 
 import '../../../core/providers.dart';
 import '../../../domain/models/card_models.dart';
@@ -81,6 +83,18 @@ class _CollectionCardItem extends ConsumerWidget {
 
   const _CollectionCardItem({required this.userCard, required this.isGrid});
 
+  void _showAdvancedAddSheet(BuildContext context, CardModel card) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => AdvancedAddSheet(card: card),
+    );
+  }
+
   Future<void> _decreaseQuantity(BuildContext context, WidgetRef ref) async {
     final inventoryRepo = ref.read(inventoryRepositoryProvider);
     
@@ -151,6 +165,14 @@ class _CollectionCardItem extends ConsumerWidget {
   }
 
   Widget _buildGridItem(BuildContext context, WidgetRef ref, CardModel card) {
+    final conditionText = userCard.gradingCompany != null && userCard.grade != null
+        ? '${userCard.gradingCompany} ${userCard.grade}'
+        : (userCard.gradingCompany ?? userCard.condition).toUpperCase();
+        
+    final priceText = userCard.purchasePrice != null 
+        ? '${userCard.purchasePrice!.toStringAsFixed(2)} kr' 
+        : '0.00 kr';
+
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 2,
@@ -201,17 +223,49 @@ class _CollectionCardItem extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        if (card.setSymbolUrl != null) ...[
+                          CachedNetworkImage(
+                            imageUrl: card.setSymbolUrl!,
+                            height: 14,
+                            width: 14,
+                            errorWidget: (c, u, e) => Text(
+                              card.setCode ?? '?',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ] else
+                          Text(
+                            '${card.setCode ?? "?"} • ',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
                         Expanded(
                           child: Text(
-                            '${card.setCode ?? "?"} • #${card.cardNumber}',
+                            '#${card.cardNumber}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              if (card.rarity != null)
+                                _Badge(text: card.rarity!, color: Colors.blue.shade100),
+                              _Badge(text: conditionText, color: Colors.green.shade100),
+                            ],
                           ),
                         ),
                         Container(
@@ -234,6 +288,15 @@ class _CollectionCardItem extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      priceText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -242,17 +305,34 @@ class _CollectionCardItem extends ConsumerWidget {
           Positioned(
             top: 4,
             right: 4,
-            child: Material(
-              color: Colors.black54,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => _decreaseQuantity(context, ref),
-                child: const Padding(
-                  padding: EdgeInsets.all(6.0),
-                  child: Icon(Icons.remove, size: 16, color: Colors.white),
+            child: Row(
+              children: [
+                Material(
+                  color: Colors.blue.shade600,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _showAdvancedAddSheet(context, card),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6.0),
+                      child: Icon(Icons.add, size: 16, color: Colors.white),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 4),
+                Material(
+                  color: Colors.black54,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _decreaseQuantity(context, ref),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6.0),
+                      child: Icon(Icons.remove, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -261,6 +341,14 @@ class _CollectionCardItem extends ConsumerWidget {
   }
 
   Widget _buildListItem(BuildContext context, WidgetRef ref, CardModel card) {
+    final conditionText = userCard.gradingCompany != null && userCard.grade != null
+        ? '${userCard.gradingCompany} ${userCard.grade}'
+        : (userCard.gradingCompany ?? userCard.condition).toUpperCase();
+        
+    final priceText = userCard.purchasePrice != null 
+        ? '${userCard.purchasePrice!.toStringAsFixed(2)} kr' 
+        : '0.00 kr';
+
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -298,9 +386,29 @@ class _CollectionCardItem extends ConsumerWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${card.setCode ?? "?"} • #${card.cardNumber}',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                  Row(
+                    children: [
+                      if (card.setSymbolUrl != null) ...[
+                        CachedNetworkImage(
+                          imageUrl: card.setSymbolUrl!,
+                          height: 14,
+                          width: 14,
+                          errorWidget: (c, u, e) => Text(
+                            card.setCode ?? '?',
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                      ] else
+                        Text(
+                          '${card.setCode ?? "?"} • ',
+                          style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                        ),
+                      Text(
+                        '#${card.cardNumber}',
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -309,7 +417,7 @@ class _CollectionCardItem extends ConsumerWidget {
                         _Badge(text: card.rarity!, color: Colors.blue.shade100),
                         const SizedBox(width: 8),
                       ],
-                      _Badge(text: userCard.condition.toUpperCase(), color: Colors.green.shade100),
+                      _Badge(text: conditionText, color: Colors.green.shade100),
                     ],
                   ),
                 ],
@@ -319,13 +427,20 @@ class _CollectionCardItem extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  '0.00 kr',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Text(
+                  priceText,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                      onPressed: () => _showAdvancedAddSheet(context, card),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
                       onPressed: () => _decreaseQuantity(context, ref),

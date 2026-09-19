@@ -281,6 +281,8 @@ class OnDeviceScanRepository implements ScanRepository {
             numberClean: (vc.cardNumber ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
             setId: vc.setCode ?? 'UNKNOWN',
             setCode: vc.setCode,
+            setSymbolUrl: vc.setSymbolUrl,
+            rarity: vc.rarity,
             imageUrlLarge: vc.imageUrl,
             imageUrlSmall: vc.imageUrl,
           );
@@ -298,6 +300,7 @@ class OnDeviceScanRepository implements ScanRepository {
             numberDenominator: card.numberDenominator,
             setId: card.setId,
             setCode: card.setCode,
+            setSymbolUrl: vc.setSymbolUrl ?? card.setSymbolUrl,
             rarity: card.rarity,
             supertype: card.supertype,
             subtypes: card.subtypes,

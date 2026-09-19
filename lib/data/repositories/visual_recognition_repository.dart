@@ -7,16 +7,45 @@ import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
 
+import '../../core/api_config.dart';
+import '../../domain/models/card_models.dart';
 import '../../domain/models/scan_models.dart';
 import '../../features/scanner/utils/viewfinder_transform.dart';
 
 class VisualRecognitionRepository {
-  // Use dart-define for configurability, fallback to emulator localhost
-  final String baseUrl = const String.fromEnvironment(
-    'NOX_BACKEND_URL',
-    defaultValue: 'http://10.0.2.2:8000',
-  );
   final _uuid = const Uuid();
+
+  Future<List<CardModel>> searchCatalog(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    final baseUrl = await ApiConfig.getBaseUrl();
+    final uri = Uri.parse('$baseUrl/search').replace(queryParameters: {'q': query});
+    try {
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] as List;
+        return results.map((json) => CardModel(
+          id: json['id'],
+          name: json['name'],
+          cleanName: (json['name'] as String).toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
+          cardNumber: json['cardNumber'] ?? '?',
+          numberClean: (json['cardNumber'] ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
+          setId: json['setId'] ?? 'UNKNOWN',
+          setCode: json['setCode'],
+          setSymbolUrl: json['setSymbolUrl'],
+          rarity: json['rarity'],
+          imageUrlLarge: json['imageUrl'],
+          imageUrlSmall: json['imageUrl'],
+        )).toList();
+      } else {
+        throw Exception('Failed to search catalog: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Search error: $e');
+      return [];
+    }
+  }
 
   Future<VisualRecognitionResult> recognizeCard({
     required XFile imageFile,
@@ -32,6 +61,7 @@ class VisualRecognitionRepository {
   }) async {
     final requestId = _uuid.v4();
     final stopwatch = Stopwatch()..start();
+    final baseUrl = await ApiConfig.getBaseUrl();
 
     print(
       '[$requestId] VisualRecognitionRepository: Target URL resolves to $baseUrl',
@@ -120,6 +150,8 @@ class VisualRecognitionRepository {
                 region: c['region'],
                 cardNumber: c['cardNumber'],
                 setCode: c['setCode'],
+                setSymbolUrl: c['setSymbolUrl'],
+                rarity: c['rarity'],
                 imageUrl: c['imageUrl'],
                 distance: (c['distance'] as num).toDouble(),
                 similarity: (c['similarity'] as num).toDouble(),

@@ -175,15 +175,13 @@ The basic NoxCollect experience should be free.
 
 A major product differentiator is that users should **not have to pay in order to use card scanning**.
 
-Potential monetization can be explored later.
+Monetization must not destroy the core free collection experience. Disruptive advertising (like unskippable video ads during scanning) is strictly prohibited as it destroys the "fast and simple" core principle.
 
-One possible model is a limited number of advertisements rather than showing advertisements during every scan.
+The primary monetization strategies will instead focus on:
 
-For example, the application could potentially show a short advertisement only a small number of times per week.
-
-Advertising is **not part of the initial MVP** and should not be prioritized during early development.
-
-Other monetization options can be explored later as long as they do not destroy the core free collection experience.
+1. **Affiliate Links:** Seamlessly integrating purchase buttons (e.g., "Buy on Cardmarket" or "Buy on TCGPlayer") on card detail views to earn commission on user purchases.
+2. **Pro Tier (Data Subscription):** Keeping scanning free, but offering advanced portfolio analytics, historical price charts, and collection insights behind a "NoxCollect PRO" subscription.
+3. **Partnerships:** Direct sponsorships or integrations with grading companies (e.g., PSA) and local card shops.
 
 ---
 
@@ -288,16 +286,14 @@ The system should prioritize **correct identification over pretending to be cert
 
 If confidence is low, the user should be asked to confirm the result.
 
-The eventual identification solution may use a combination of techniques such as:
+The identification solution uses an **Evidence Fusion** architecture:
 
-* Text recognition
-* Card number recognition
-* Set information
-* Image matching
-* Visual features
-* Card database metadata
+1. **On-Device OCR:** The mobile app uses local ML Kit text recognition to extract the card number, name, and set info instantly.
+2. **Visual Embedding Backend:** The Python (FastAPI) backend uses a Deep Learning Vision Transformer (`clip-ViT-B-32`) to convert the cropped card image into a 512-dimensional vector.
+3. **Vector Database:** The backend uses PostgreSQL with `pgvector` to perform a similarity search.
+4. **Fusion Logic:** The system combines the local OCR text clues with the backend's visual similarity score to determine the final exact match.
 
-The exact implementation has **not yet been decided** and should be evaluated during technical planning.
+This hybrid approach ensures high accuracy by leveraging both textual and visual evidence.
 
 ---
 
@@ -329,22 +325,17 @@ Do not assume that data visible on a website can legally or technically be scrap
 
 # 11. Technology
 
-The technology stack has **not yet been finalized**.
+The technology stack has been established for the MVP.
 
-Technologies currently worth evaluating include Flutter/Dart and Firebase, but these are possibilities rather than fixed requirements.
+**Frontend:**
+* **Flutter/Dart:** For cross-platform mobile development (Android primary, iOS future).
+* **On-Device OCR:** Google ML Kit for fast, local text recognition.
 
-Before implementation begins, the architecture should evaluate the best choices for:
-
-* Mobile application framework
-* Backend
-* Database
-* Authentication
-* Image processing
-* Card recognition
-* External APIs
-* Hosting
-* Storage
-* Monitoring
+**Backend (Python/FastAPI):**
+* **FastAPI:** High-performance Python API framework.
+* **Docker:** For containerized database and backend services.
+* **PostgreSQL + pgvector:** Relational database with vector search capabilities for visual matching.
+* **Machine Learning:** `sentence-transformers` (`clip-ViT-B-32`) for generating visual image embeddings.
 
 Important priorities include:
 
@@ -354,14 +345,11 @@ Important priorities include:
 4. Camera support
 5. Security
 6. Maintainability
-7. Low development cost
-8. Low initial infrastructure cost
-9. Ability to scale if NoxCollect grows
-10. A codebase that remains understandable and maintainable
+7. Cost-effective hosting (Deployable to a standard VPS)
+8. Ability to scale if NoxCollect grows
+9. A codebase that remains understandable and maintainable
 
-Do not select technologies purely because they are fashionable or because an AI agent is familiar with them.
-
-Technical decisions should be justified based on NoxCollect's actual requirements.
+Technical decisions must respect this established stack. Do not introduce new heavy frameworks or languages without a compelling reason.
 
 ---
 
@@ -389,27 +377,13 @@ The MVP comes first.
 
 # 13. Current Project Status
 
-NoxCollect is currently in the **planning and architecture phase**.
+NoxCollect is currently in the **MVP Implementation Phase**.
 
-No technology stack should be considered final yet.
+The initial planning and architecture phase is complete. The core technology stack has been chosen (Flutter + FastAPI + PostgreSQL/pgvector).
 
-The next objective is to determine an appropriate architecture for the MVP.
+The current focus is on refining the core Evidence Fusion scanning engine (OCR + Visual API), integrating reliable card data, and building out the collection management UI.
 
-Before writing application code, evaluate and discuss:
-
-* Mobile technology
-* Backend architecture
-* Database
-* Authentication
-* Card data sources
-* Pricing data sources
-* Camera/scanning architecture
-* Card recognition strategy
-* Security
-* Privacy
-* Initial hosting/infrastructure costs
-
-**Do not begin implementing the application until the initial architecture has been reviewed and agreed upon.**
+AI coding agents should assume the project is actively being coded and should focus on implementation, debugging, and feature completion within the established architecture.
 # 14. Data Ownership and Portability
 
 Users should retain control over their collection data.

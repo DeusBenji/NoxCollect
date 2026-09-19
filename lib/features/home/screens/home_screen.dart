@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../collection/screens/my_collection_screen.dart';
 import '../../scanner/screens/consumer_scan_screen.dart';
 import '../../scanner/screens/scan_benchmark_screen.dart';
+import '../../search/screens/search_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -56,6 +57,21 @@ class HomeScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.collections_bookmark),
                 label: const Text('My Collection'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SearchScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.search),
+                label: const Text('Manual Search'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

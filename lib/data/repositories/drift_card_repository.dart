@@ -13,10 +13,18 @@ class DriftCardRepository implements CardRepository {
 
   @override
   Future<CardModel?> getCardById(String id) async {
-    final query = _db.select(_db.cardsTable)..where((tbl) => tbl.id.equals(id));
+    final query = _db.select(_db.cardsTable).join([
+      leftOuterJoin(_db.setsTable, _db.setsTable.id.equalsExp(_db.cardsTable.setId)),
+    ])..where(_db.cardsTable.id.equals(id));
+    
     final row = await query.getSingleOrNull();
     if (row == null) return null;
-    return _mapCardRowToModel(row);
+    
+    final cardData = row.readTable(_db.cardsTable);
+    final setData = row.readTableOrNull(_db.setsTable);
+    
+    final model = _mapCardRowToModel(cardData, setSymbolUrl: setData?.symbolUrl);
+    return model;
   }
 
   @override
@@ -147,7 +155,7 @@ class DriftCardRepository implements CardRepository {
   }
 
   // Helper mappings
-  CardModel _mapCardRowToModel(CardsTableData row) {
+  CardModel _mapCardRowToModel(CardsTableData row, {String? setSymbolUrl}) {
     List<String> subtypes = [];
     List<String> types = [];
     Map<String, dynamic> externalIds = {};
@@ -176,6 +184,7 @@ class DriftCardRepository implements CardRepository {
       numberDenominator: row.numberDenominator,
       setId: row.setId,
       setCode: row.setCode,
+      setSymbolUrl: setSymbolUrl,
       rarity: row.rarity,
       supertype: row.supertype,
       subtypes: subtypes,

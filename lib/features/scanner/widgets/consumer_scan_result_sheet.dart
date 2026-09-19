@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../../domain/models/card_models.dart';
 import '../../../domain/models/scan_models.dart';
+import '../../search/widgets/advanced_add_sheet.dart';
 
 class ConsumerScanResultSheet extends ConsumerStatefulWidget {
   final ScanMatchResult matchResult;
@@ -35,59 +36,20 @@ class _ConsumerScanResultSheetState
                     (widget.matchResult.candidates.isNotEmpty ? widget.matchResult.candidates.first.card : null);
   }
 
-  Future<void> _addToCollection(CardModel card) async {
-    setState(() => _isSaving = true);
-    try {
-      final inventoryRepo = ref.read(inventoryRepositoryProvider);
-      final cardRepo = ref.read(cardRepositoryProvider);
+  void _addToCollection(CardModel card) {
+    // Pop the current scan result sheet
+    Navigator.of(context).pop();
 
-      // Ensure the set exists to satisfy foreign key constraints
-      await cardRepo.upsertSets([
-        SetModel(
-          id: card.setId,
-          name: card.setCode ?? 'Unknown Set',
-          setCode: card.setCode,
-          series: 'Unknown Series',
-        )
-      ]);
-
-      // Ensure the card is saved in the local database so it can be loaded later
-      await cardRepo.upsertCards([card]);
-
-      final userCard = UserCardModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        cardId: card.id,
-        quantity: 1,
-        condition: 'raw',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      await inventoryRepo.addCardToInventory(userCard);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Added to Collection!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
+    // Show the Advanced Add Sheet
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => AdvancedAddSheet(card: card),
+    );
   }
 
   @override

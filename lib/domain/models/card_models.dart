@@ -44,6 +44,7 @@ class CardModel {
   final String? numberDenominator;
   final String setId;
   final String? setCode;
+  final String? setSymbolUrl;
   final String? rarity;
   final String? supertype;
   final List<String> subtypes;
@@ -67,6 +68,7 @@ class CardModel {
     this.numberDenominator,
     required this.setId,
     this.setCode,
+    this.setSymbolUrl,
     this.rarity,
     this.supertype,
     this.subtypes = const [],

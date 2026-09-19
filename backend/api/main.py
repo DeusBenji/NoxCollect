@@ -137,6 +137,10 @@ async def recognize_card(
             "region": print_record.region,
             "cardNumber": print_record.card_number,
             "setCode": card_set.set_code if card_set else None,
+            "setSymbolUrl": card_set.symbol_url if card_set and card_set.symbol_url else (
+                "https://images.pokemontcg.io/base1/symbol.png" if card_set and card_set.set_code == 'PFL' else None
+            ),
+            "rarity": print_record.rarity,
             "imageUrl": ref_img.image_url if ref_img else None,
             "distance": distance,
             "similarity": sim_score,
@@ -165,3 +169,64 @@ async def recognize_card(
         },
         "candidates": candidates
     }
+
+@app.get("/search")
+def search_cards(q: str, db: Session = Depends(get_db)):
+    """Search for cards by name and optionally number (e.g. 'Gourgeist 041' or 'Charizard')"""
+    if not q or not q.strip():
+        return {"results": []}
+        
+    query_parts = q.strip().split()
+    
+    # Base query joined with ReferenceImage and CardSet
+    query = db.query(models.Printing, models.ReferenceImage, models.CardSet).outerjoin(
+        models.ReferenceImage, models.Printing.id == models.ReferenceImage.printing_id
+    ).outerjoin(
+        models.CardSet, models.Printing.set_id == models.CardSet.id
+    ).filter(models.Printing.is_active == True)
+    
+    if len(query_parts) == 1:
+        # Single word, assume it's a name
+        search_term = query_parts[0]
+        query = query.filter(models.Printing.name.ilike(f"%{search_term}%"))
+    else:
+        # Multiple words. Assume the last part might be a number
+        possible_num = query_parts[-1]
+        name_part = " ".join(query_parts[:-1])
+        
+        # We try to match: name ILIKE name_part AND (card_number ILIKE possible_num OR number_clean == possible_num)
+        # OR just name ILIKE full_query if the last part wasn't a number
+        from sqlalchemy import or_, and_
+        query = query.filter(
+            or_(
+                and_(
+                    models.Printing.name.ilike(f"%{name_part}%"),
+                    or_(
+                        models.Printing.card_number.ilike(f"%{possible_num}%"),
+                        models.Printing.number_clean == "".join(filter(str.isdigit, possible_num))
+                    )
+                ),
+                models.Printing.name.ilike(f"%{q}%")
+            )
+        )
+        
+    # Execute query, limit 50
+    results = query.limit(50).all()
+    
+    # Serialize
+    serialized = []
+    for print_record, ref_img, card_set in results:
+        serialized.append({
+            "id": print_record.id,
+            "name": print_record.name,
+            "setId": print_record.set_id,
+            "setCode": card_set.set_code if card_set else None,
+            "setSymbolUrl": card_set.symbol_url if card_set and card_set.symbol_url else (
+                "https://images.pokemontcg.io/base1/symbol.png" if card_set and card_set.set_code == 'PFL' else None
+            ),
+            "cardNumber": print_record.card_number,
+            "rarity": print_record.rarity,
+            "imageUrl": ref_img.image_url if ref_img else None
+        })
+        
+    return {"results": serialized}

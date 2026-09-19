@@ -51,6 +51,8 @@ class VisualCandidate {
   final String region;
   final String? cardNumber;
   final String? setCode;
+  final String? setSymbolUrl;
+  final String? rarity;
   final String? imageUrl;
   final double distance;
   final double similarity;
@@ -63,6 +65,8 @@ class VisualCandidate {
     required this.region,
     this.cardNumber,
     this.setCode,
+    this.setSymbolUrl,
+    this.rarity,
     this.imageUrl,
     required this.distance,
     required this.similarity,
