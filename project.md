@@ -518,6 +518,13 @@ AI coding agents should:
 * Explain significant architectural decisions in understandable language.
 
 When there is a conflict between convenience and security, user data integrity, or the core NoxCollect product principles, those concerns should be surfaced explicitly before proceeding.
+### 19.1 Testing Guidelines
+
+To maintain a robust and bug-free backend, all future development must adhere to these testing rules:
+1. **Semantic Structure:** Tests must be professionally organized. Use class-based grouping within a test file (e.g., \class TestSearchEndpoint:\) or create semantically named files (e.g., \	est_search.py\). Lazy or numbered naming (like \	est_api2.py\) is strictly forbidden.
+2. **Comprehensive Coverage:** Every new API endpoint, database model, or core logic change MUST be accompanied by at least one "happy path" test before the feature is considered complete.
+3. **Immutable Application Code:** If a test fails, the AI must assume the test logic is flawed. AI agents are strictly forbidden from silently modifying application code (e.g., \main.py\) to make a poorly written test pass. If a legitimate bug is discovered in the app code, the AI must ask the user for permission before fixing it.
+
 # 20. Sustainability and Monetization Principles
 
 NoxCollect is not initially being designed to maximize profit.
@@ -604,4 +611,5 @@ The architecture should avoid situations where normal usage, abuse, bots, or une
 Other revenue sources may be evaluated later, including legitimate marketplace affiliate partnerships or similar integrations.
 
 These are optional future possibilities and should not influence the initial prototype unless explicitly approved.
+
 
