@@ -227,8 +227,8 @@ class _CollectionCardItem extends ConsumerWidget {
                         if (card.setSymbolUrl != null) ...[
                           CachedNetworkImage(
                             imageUrl: card.setSymbolUrl!,
-                            height: 14,
-                            width: 14,
+                            height: 26,
+                            width: 26,
                             errorWidget: (c, u, e) => Text(
                               card.setCode ?? '?',
                               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
@@ -391,8 +391,8 @@ class _CollectionCardItem extends ConsumerWidget {
                       if (card.setSymbolUrl != null) ...[
                         CachedNetworkImage(
                           imageUrl: card.setSymbolUrl!,
-                          height: 14,
-                          width: 14,
+                          height: 26,
+                          width: 26,
                           errorWidget: (c, u, e) => Text(
                             card.setCode ?? '?',
                             style: TextStyle(fontSize: 13, color: Colors.grey.shade700),

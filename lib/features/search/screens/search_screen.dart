@@ -20,17 +20,62 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   final _visualRepo = VisualRecognitionRepository(); // Can also be provided via Riverpod in future
+  final _scrollController = ScrollController();
   
   Timer? _debounce;
   List<CardModel> _results = [];
   bool _isLoading = false;
   String _error = '';
+  
+  int _skip = 0;
+  final int _limit = 50;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _searchController.dispose();
     _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300 && 
+        !_isLoadingMore && _hasMore && !_isLoading) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    setState(() {
+      _isLoadingMore = true;
+    });
+    try {
+      _skip += _limit;
+      final cards = await _visualRepo.searchCatalog(_searchController.text, skip: _skip, limit: _limit);
+      if (mounted) {
+        setState(() {
+          if (cards.length < _limit) {
+            _hasMore = false;
+          }
+          _results.addAll(cards);
+          _isLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -41,6 +86,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         _results = [];
         _error = '';
         _isLoading = false;
+        _skip = 0;
+        _hasMore = true;
       });
       return;
     }
@@ -49,14 +96,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       setState(() {
         _isLoading = true;
         _error = '';
+        _skip = 0;
+        _hasMore = true;
       });
 
       try {
-        final cards = await _visualRepo.searchCatalog(query);
+        final cards = await _visualRepo.searchCatalog(query, skip: _skip, limit: _limit);
         if (mounted) {
           setState(() {
             _results = cards;
             _isLoading = false;
+            if (cards.length < _limit) {
+              _hasMore = false;
+            }
           });
         }
       } catch (e) {
@@ -118,16 +170,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const Expanded(child: Center(child: Text('Type to search for cards', style: TextStyle(color: Colors.grey))))
           else
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.58, // slightly taller for new content
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: _results.length,
-                itemBuilder: (context, index) {
+              child: Column(
+                children: [
+                  Expanded(
+                    child: GridView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.58, // slightly taller for new content
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: _results.length,
+                      itemBuilder: (context, index) {
                   final card = _results[index];
                   return Card(
                     clipBehavior: Clip.antiAlias,
@@ -190,8 +246,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       if (card.setSymbolUrl != null) ...[
                                         CachedNetworkImage(
                                           imageUrl: card.setSymbolUrl!,
-                                          height: 14,
-                                          width: 14,
+                                          height: 26,
+                                          width: 26,
                                           errorWidget: (c, u, e) => Text(
                                             card.setCode ?? '?',
                                             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
@@ -258,9 +314,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ],
                     ),
                   );
-                },
-              ),
+                    },
+                  ),
+                ),
+                if (_isLoadingMore)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );

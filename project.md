@@ -1,14 +1,14 @@
-# NoxCollect — Project Specification
+﻿# NoxCollect â€” Project Specification
 
 ## 1. Project Overview
 
 NoxCollect is a mobile-first application for collectors of trading cards.
 
-The first version of NoxCollect will focus exclusively on **Pokémon cards**, but the system should be designed so that other trading card games can potentially be supported in the future.
+The first version of NoxCollect will focus exclusively on **PokÃ©mon cards**, but the system should be designed so that other trading card games can potentially be supported in the future.
 
 The core purpose of NoxCollect is to make it extremely easy for users to digitize, organize, track, and understand the value of their physical card collection.
 
-A user should be able to take out their phone, scan a Pokémon card with the camera, identify the exact card, and add it to their personal collection with as little friction as possible.
+A user should be able to take out their phone, scan a PokÃ©mon card with the camera, identify the exact card, and add it to their personal collection with as little friction as possible.
 
 ## 2. Core Product Principle
 
@@ -26,18 +26,18 @@ Monetization should not interfere with the core collection experience.
 
 ## 3.1 Card Scanning
 
-Users should be able to use their phone camera to scan a Pokémon card.
+Users should be able to use their phone camera to scan a PokÃ©mon card.
 
 The system should attempt to identify the exact card using relevant information such as:
 
-* Pokémon/card name
+* PokÃ©mon/card name
 * Card number
 * Set
 * Artwork
 * Set symbols
 * Other visual characteristics
 
-The goal is to identify the exact printing/version of the card rather than simply identifying which Pokémon appears on it.
+The goal is to identify the exact printing/version of the card rather than simply identifying which PokÃ©mon appears on it.
 
 If the system is uncertain, it should not silently select a potentially incorrect card.
 
@@ -53,7 +53,7 @@ Users should also be able to manually search the card database.
 
 Search should eventually support criteria such as:
 
-* Pokémon/card name
+* PokÃ©mon/card name
 * Card number
 * Set
 * Card type
@@ -96,12 +96,12 @@ NoxCollect should eventually support different collection types, including:
 * Set-based collections
 * Master sets
 * Artist-based collections
-* Pokémon-specific collections
+* PokÃ©mon-specific collections
 * Other user-defined collections
 
 ### Master Sets
 
-Users should be able to create or track a master collection for a specific Pokémon set, such as Scarlet & Violet — 151.
+Users should be able to create or track a master collection for a specific PokÃ©mon set, such as Scarlet & Violet â€” 151.
 
 For set-based collections, NoxCollect should be able to compare the user's owned cards against the known cards and variants required for that set and display collection progress.
 
@@ -113,7 +113,7 @@ This may include information such as:
 * Completion percentage
 * Relevant card variants
 
-The exact rules defining a complete “Master Set” may differ between sets and should not be permanently hardcoded into the application.
+The exact rules defining a complete â€œMaster Setâ€ may differ between sets and should not be permanently hardcoded into the application.
 
 ### Collection Membership
 
@@ -185,14 +185,14 @@ The primary monetization strategies will instead focus on:
 
 ---
 
-# 5. MVP — First Version
+# 5. MVP â€” First Version
 
 The first usable version of NoxCollect should focus on proving the core experience.
 
 The MVP should aim to include:
 
 * User registration and login
-* Pokémon card database
+* PokÃ©mon card database
 * Manual card search
 * Camera-based card scanning
 * Card identification
@@ -306,7 +306,7 @@ The exact providers have not yet been selected.
 Before selecting a provider, the project should evaluate:
 
 * Data quality
-* Pokémon card coverage
+* PokÃ©mon card coverage
 * Update frequency
 * Raw price availability
 * Graded price availability
@@ -322,6 +322,15 @@ Before selecting a provider, the project should evaluate:
 Do not assume that data visible on a website can legally or technically be scraped and reused.
 
 ---
+
+### 10.1 Pricing Architecture (Microservice Strategy)
+
+To handle the volatile nature of TCG prices (e.g., Raw, PSA 9, PSA 10) without slowing down the core application or hitting API rate limits on live user searches, NoxCollect will employ a Microservice Architecture for pricing:
+
+* **Core Database:** The main PostgreSQL database will store price columns (e.g., price_raw) directly on the printings table. This allows native, lightning-fast sorting (e.g., 'Sort by Price') and portfolio value calculations.
+* **Pricing Microservice (Cron Job):** A decoupled background service will run on a schedule (e.g., nightly). It will fetch the latest market prices from third-party APIs (like PokemonTCG.io, Cardmarket, or PriceCharting) and bulk-update the core database.
+* **Vendor Independence:** This ensures the main app never crashes if a pricing API goes down, and allows the project to swap pricing providers seamlessly without touching the core Flutter app or FastAPI search logic.
+
 
 # 11. Technology
 
@@ -361,7 +370,7 @@ Do not attempt to build the entire application at once.
 
 Prefer:
 
-**Plan → Build small feature → Test → Verify → Continue**
+**Plan â†’ Build small feature â†’ Test â†’ Verify â†’ Continue**
 
 Large architectural changes should be discussed before being implemented.
 
@@ -595,3 +604,4 @@ The architecture should avoid situations where normal usage, abuse, bots, or une
 Other revenue sources may be evaluated later, including legitimate marketplace affiliate partnerships or similar integrations.
 
 These are optional future possibilities and should not influence the initial prototype unless explicitly approved.
+

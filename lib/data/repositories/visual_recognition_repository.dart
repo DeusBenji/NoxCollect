@@ -15,11 +15,15 @@ import '../../features/scanner/utils/viewfinder_transform.dart';
 class VisualRecognitionRepository {
   final _uuid = const Uuid();
 
-  Future<List<CardModel>> searchCatalog(String query) async {
+  Future<List<CardModel>> searchCatalog(String query, {int skip = 0, int limit = 50}) async {
     if (query.trim().isEmpty) return [];
 
     final baseUrl = await ApiConfig.getBaseUrl();
-    final uri = Uri.parse('$baseUrl/search').replace(queryParameters: {'q': query});
+    final uri = Uri.parse('$baseUrl/search').replace(queryParameters: {
+      'q': query,
+      'skip': skip.toString(),
+      'limit': limit.toString(),
+    });
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {

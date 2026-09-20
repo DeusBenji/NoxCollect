@@ -152,8 +152,8 @@ class _AdvancedAddSheetState extends ConsumerState<AdvancedAddSheet> {
                         if (widget.card.setSymbolUrl != null) ...[
                           CachedNetworkImage(
                             imageUrl: widget.card.setSymbolUrl!,
-                            height: 16,
-                            width: 16,
+                            height: 26,
+                            width: 26,
                             errorWidget: (c, u, e) => Text(widget.card.setCode ?? ''),
                           ),
                           const SizedBox(width: 6),
