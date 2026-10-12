@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../core/providers.dart';
 import '../../../domain/models/card_models.dart';
 import '../../../data/repositories/visual_recognition_repository.dart';
 import '../widgets/advanced_add_sheet.dart';
@@ -31,6 +30,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final int _limit = 50;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  String _sortBy = 'default';
+  String _searchMode = 'all';
 
   @override
   void initState() {
@@ -59,7 +60,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
     try {
       _skip += _limit;
-      final cards = await _visualRepo.searchCatalog(_searchController.text, skip: _skip, limit: _limit);
+      final cards = await _visualRepo.searchCatalog(
+        _searchController.text,
+        skip: _skip,
+        limit: _limit,
+        sortBy: _sortBy,
+        searchMode: _searchMode,
+      );
       if (mounted) {
         setState(() {
           if (cards.length < _limit) {
@@ -73,6 +80,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       if (mounted) {
         setState(() {
           _isLoadingMore = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _results = [];
+        _error = '';
+        _isLoading = false;
+        _skip = 0;
+        _hasMore = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = '';
+      _skip = 0;
+      _hasMore = true;
+    });
+
+    try {
+      final cards = await _visualRepo.searchCatalog(
+        query,
+        skip: _skip,
+        limit: _limit,
+        sortBy: _sortBy,
+        searchMode: _searchMode,
+      );
+      if (mounted) {
+        setState(() {
+          _results = cards;
+          _isLoading = false;
+          if (cards.length < _limit) {
+            _hasMore = false;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
         });
       }
     }
@@ -92,34 +145,143 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return;
     }
 
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      setState(() {
-        _isLoading = true;
-        _error = '';
-        _skip = 0;
-        _hasMore = true;
-      });
-
-      try {
-        final cards = await _visualRepo.searchCatalog(query, skip: _skip, limit: _limit);
-        if (mounted) {
-          setState(() {
-            _results = cards;
-            _isLoading = false;
-            if (cards.length < _limit) {
-              _hasMore = false;
-            }
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _error = e.toString();
-            _isLoading = false;
-          });
-        }
-      }
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _performSearch(query);
     });
+  }
+
+  void _showSortBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Search & Sort Options',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(sheetContext),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20.0, 8.0, 20.0, 4.0),
+                      child: Text(
+                        'Search By',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    RadioGroup<String>(
+                      groupValue: _searchMode,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setSheetState(() {
+                          _searchMode = value;
+                        });
+                        setState(() {
+                          _searchMode = value;
+                          _skip = 0;
+                        });
+                        Navigator.pop(sheetContext);
+                        _performSearch(_searchController.text);
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          RadioListTile<String>(
+                            title: Text('All (Name & Set)'),
+                            value: 'all',
+                          ),
+                          RadioListTile<String>(
+                            title: Text('Set Only'),
+                            value: 'set',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20.0, 8.0, 20.0, 4.0),
+                      child: Text(
+                        'Sort By',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    RadioGroup<String>(
+                      groupValue: _sortBy,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setSheetState(() {
+                          _sortBy = value;
+                        });
+                        setState(() {
+                          _sortBy = value;
+                          _skip = 0;
+                        });
+                        Navigator.pop(sheetContext);
+                        _performSearch(_searchController.text);
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          RadioListTile<String>(
+                            title: Text('Default (Set & Number)'),
+                            value: 'default',
+                          ),
+                          RadioListTile<String>(
+                            title: Text('Card Number (Low to High)'),
+                            value: 'number_asc',
+                          ),
+                          RadioListTile<String>(
+                            title: Text('Card Number (High to Low)'),
+                            value: 'number_desc',
+                          ),
+                          RadioListTile<String>(
+                            title: Text('Card Name (A - Z)'),
+                            value: 'name_asc',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
   
   void _showAdvancedAddSheet(CardModel card) {
@@ -149,8 +311,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search by name and number (e.g. Gourgeist 041)',
+                hintText: _searchMode == 'set'
+                    ? 'Search by set (e.g. DRI, sv10, Destined Rivals)'
+                    : 'Search by name and number (e.g. Gourgeist 041)',
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.tune,
+                    color: (_sortBy != 'default' || _searchMode != 'all')
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.shade700,
+                  ),
+                  tooltip: 'Search & Sort Options',
+                  onPressed: _showSortBottomSheet,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

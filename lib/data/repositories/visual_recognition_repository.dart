@@ -15,15 +15,29 @@ import '../../features/scanner/utils/viewfinder_transform.dart';
 class VisualRecognitionRepository {
   final _uuid = const Uuid();
 
-  Future<List<CardModel>> searchCatalog(String query, {int skip = 0, int limit = 50}) async {
+  Future<List<CardModel>> searchCatalog(
+    String query, {
+    int skip = 0,
+    int limit = 50,
+    String? sortBy,
+    String? searchMode = "all",
+  }) async {
     if (query.trim().isEmpty) return [];
 
     final baseUrl = await ApiConfig.getBaseUrl();
-    final uri = Uri.parse('$baseUrl/search').replace(queryParameters: {
+    final queryParameters = <String, String>{
       'q': query,
       'skip': skip.toString(),
       'limit': limit.toString(),
-    });
+    };
+    if (sortBy != null && sortBy.isNotEmpty) {
+      queryParameters['sort_by'] = sortBy;
+    }
+    if (searchMode != null && searchMode.isNotEmpty) {
+      queryParameters['search_mode'] = searchMode;
+    }
+
+    final uri = Uri.parse('$baseUrl/search').replace(queryParameters: queryParameters);
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {

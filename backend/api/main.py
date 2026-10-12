@@ -1,7 +1,7 @@
 import logging
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Header, Form
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Header, Form, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Dict, Any, Optional
@@ -171,7 +171,14 @@ async def recognize_card(
     }
 
 @app.get("/search")
-def search_cards(q: str, skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
+def search_cards(
+    q: str,
+    skip: int = 0,
+    limit: int = 50,
+    sort_by: str = Query("default"),
+    search_mode: str = Query("all"),
+    db: Session = Depends(get_db)
+):
     """Search for cards by name, number, set id, or set printed code (e.g. 'Gourgeist 041', 'Charizard sv10', 'DRI')"""
     if not q or not q.strip():
         return {"results": []}
@@ -189,22 +196,49 @@ def search_cards(q: str, skip: int = 0, limit: int = 50, db: Session = Depends(g
     
     term_filters = []
     for term in query_parts:
-        term_filters.append(
-            or_(
-                models.Printing.name.ilike(f"%{term}%"),
-                models.Printing.card_number.ilike(f"%{term}%"),
-                models.CardSet.id.ilike(f"%{term}%"),
-                models.CardSet.printed_code.ilike(f"%{term}%")
+        if search_mode == "set":
+            term_filters.append(
+                or_(
+                    models.CardSet.id.ilike(f"%{term}%"),
+                    models.CardSet.printed_code.ilike(f"%{term}%"),
+                    models.CardSet.name.ilike(f"%{term}%")
+                )
             )
-        )
+        else:
+            term_filters.append(
+                or_(
+                    models.Printing.name.ilike(f"%{term}%"),
+                    models.Printing.card_number.ilike(f"%{term}%"),
+                    models.CardSet.id.ilike(f"%{term}%"),
+                    models.CardSet.printed_code.ilike(f"%{term}%"),
+                    models.CardSet.name.ilike(f"%{term}%")
+                )
+            )
         
     query = query.filter(and_(*term_filters))
     
-    # Sort by release date (newest first) and then by card number (zero padded for proper numerical sort)
-    query = query.order_by(
-        models.CardSet.release_date.desc().nulls_last(),
-        func.lpad(models.Printing.card_number, 5, '0').asc()
-    )
+    # Sort order
+    if sort_by == "number_asc":
+        query = query.order_by(
+            func.lpad(models.Printing.card_number, 5, '0').asc(),
+            models.Printing.set_id.asc()
+        )
+    elif sort_by == "number_desc":
+        query = query.order_by(
+            func.lpad(models.Printing.card_number, 5, '0').desc(),
+            models.Printing.set_id.asc()
+        )
+    elif sort_by == "name_asc":
+        query = query.order_by(
+            models.Printing.name.asc(),
+            func.lpad(models.Printing.card_number, 5, '0').asc()
+        )
+    else:  # default
+        query = query.order_by(
+            models.CardSet.release_date.desc().nulls_last(),
+            models.Printing.set_id.asc(),
+            func.lpad(models.Printing.card_number, 5, '0').asc()
+        )
     
     # Execute query with pagination
     results = query.offset(skip).limit(limit).all()

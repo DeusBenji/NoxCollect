@@ -83,6 +83,68 @@ class TestSearchEndpoint:
         data = response.json()
         assert data["results"] == []
 
+    def test_search_sort_default(self):
+        response = client.get("/search?q=charizard&sort_by=default")
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert isinstance(data["results"], list)
+
+    def test_search_sort_number_asc(self):
+        response = client.get("/search?q=charizard&sort_by=number_asc")
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert isinstance(data["results"], list)
+        results = data["results"]
+        if len(results) >= 2:
+            def card_num_key(res):
+                num_str = str(res.get("cardNumber", "")).strip()
+                return num_str.zfill(5)
+            for i in range(len(results) - 1):
+                assert card_num_key(results[i]) <= card_num_key(results[i + 1])
+
+    def test_search_sort_name_asc(self):
+        response = client.get("/search?q=charizard&sort_by=name_asc")
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert isinstance(data["results"], list)
+        results = data["results"]
+        if len(results) >= 2:
+            for i in range(len(results) - 1):
+                assert results[i]["name"] <= results[i + 1]["name"]
+
+    def test_search_sort_number_desc(self):
+        response = client.get("/search?q=base1&sort_by=number_desc")
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert isinstance(data["results"], list)
+        results = data["results"]
+        if len(results) >= 2:
+            def card_num_key(res):
+                num_str = str(res.get("cardNumber", "")).strip()
+                return int(num_str) if num_str.isdigit() else 0
+            for i in range(len(results) - 1):
+                assert card_num_key(results[i]) >= card_num_key(results[i + 1])
+
+    def test_search_mode_set(self):
+        # In 'all' mode, searching 'DRI' returns card names containing 'dri' (e.g. Drifloon, Beedrill, Dodrio)
+        response_all = client.get("/search?q=DRI&search_mode=all")
+        assert response_all.status_code == 200
+        cards_all = response_all.json()["results"]
+        assert any("drif" in c["name"].lower() or "drill" in c["name"].lower() for c in cards_all)
+
+        # In 'set' mode, searching 'DRI' returns only cards from Destined Rivals (set id sv10), excluding Drifloon/Beedrill
+        response_set = client.get("/search?q=DRI&search_mode=set")
+        assert response_set.status_code == 200
+        cards_set = response_set.json()["results"]
+        assert len(cards_set) > 0
+        assert not any("drif" in c["name"].lower() or "drill" in c["name"].lower() for c in cards_set)
+        for card in cards_set:
+            assert card["setId"] == "sv10" or card.get("setCode") == "DRI"
+
 
 class TestVisionPipeline:
     def test_get_image_embedding(self):
